@@ -1,0 +1,44 @@
+# .distignore — what must NOT reach the distributed ZIP.
+# Verify against the BUILT ARCHIVE, never the working tree.
+# If your build script keeps its own hard-coded copy list, update BOTH.
+
+/.git
+/.gitignore
+/.gitattributes
+/.github
+/.claude
+/.cursor
+/CLAUDE.md
+/AGENTS.md
+/.distignore
+/.editorconfig
+/.wp-env.json
+/.wp-env.override.json
+/node_modules
+/tests
+/tools
+/bin
+/docs
+/.phpunit.cache
+/.phpunit.result.cache
+/phpunit.xml
+/phpunit.xml.dist
+/phpcs.xml
+/phpcs.xml.dist
+/eslint.config.js
+/webpack.config.js
+/package.json
+/package-lock.json
+/composer.lock
+/languages/*.po
+/languages/*.mo
+/languages/*.l10n.php
+/languages/*.json
+*.zip
+*.tar.gz
+
+# KEEP, despite looking like tooling:
+#   composer.json  — required when vendor/ ships (missing_composer_json_file)
+#   package.json   — keep if the readme points at it as the public build tooling
+#   *.pot          — the translation template belongs in the package
+#   readme.txt, LICENSE, and any source you ship for guideline 4
