@@ -99,7 +99,7 @@ DATA="$(dirname "$0")/trademark-slugs.txt"
 if [ ! -f "$DATA" ]; then
   warn "scripts/trademark-slugs.txt missing — run: node scripts/refresh-catalog.mjs <plugin-check>"
 else
-  SLUGVERDICT="$(python3 - "$DATA" "$SLUG" <<'"'"'PY'"'"'
+  SLUGVERDICT="$(python3 - "$DATA" "$SLUG" <<'PY'
 import sys
 data, slug = sys.argv[1], sys.argv[2]
 sec, buckets = None, {}
@@ -185,6 +185,10 @@ cat <<'TXT'
   - Would an ordinary user confuse it with anything listed above, from the name alone?
   - Any keyword stuffing in the name, short description or tags?
   - Is any trademark-looking coined word actually yours? If not, expect to justify it.
+  - Is this a Lite/Free edition of a product sold elsewhere? Then the pre-review will read
+    the paid product as ANOTHER ENTITY'S unless ownership is provable: TXT record
+    wordpressorg-<username>-verification on that product's domain, or an account email on
+    it, and Plugin URI / Author URI pointing there. "Lite" itself is allowed.
 TXT
 
 echo

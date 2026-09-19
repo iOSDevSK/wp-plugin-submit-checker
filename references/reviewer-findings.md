@@ -141,6 +141,20 @@ grep -rnE --include='*.php' --exclude-dir={vendor,node_modules,.git,tests,dist,b
 A genuinely inert placeholder node (`type="text/plain"`, read later via `.textContent`) is
 the one exception — keep it, escape the body, and justify the ignore.
 
+**Seen in a real pre-review (Sep 2026):** six hits, every one an `echo '<style …>'` or a
+literal `<script>` block in an admin screen. `wp_strip_all_tags()` on the CSS plus a
+`phpcs:ignore … OutputNotEscaped` did not help — the scan quotes the line, ignore comment
+and all. What replaces each shape:
+
+| Printed by hand | Goes through |
+|---|---|
+| `echo '<style id="x">' . $css . '</style>'` on the front end | `wp_register_style( 'x', false ); wp_enqueue_style( 'x' ); wp_add_inline_style( 'x', $css );` — a source-less handle prints `<style id="x-inline-css">` in the same place |
+| per-block `<style>` batches | the same, one handle per batch |
+| `<script>` in a settings screen | a real file (`assets/admin-*.js`) on `admin_enqueue_scripts`, data via `wp_add_inline_script()` / `wp_localize_script()` |
+| JSON-LD | `wp_print_inline_script_tag( $json, array( 'type' => 'application/ld+json' ) )` |
+
+The grep above must come back with comments only before you upload.
+
 ## 11. Output escaping
 
 > Covered by `late_escaping`. See `justifying-false-positives.md`.
@@ -230,6 +244,99 @@ matches `justifying-false-positives.md`. A bare ignore reads as concealment.
   accessible**, bundled or linked from the readme.
 - "Powered by" credits default to off (guideline 10); admin notices must be contextual and
   dismissible (guideline 11).
+
+## 19. Trialware — a paid feature present and switched off (Guideline 5)
+
+> **No check covers this.** It was the finding the pre-review was right about.
+
+A Lite edition **derived from a Pro codebase** is the classic source: the licence check is
+removed but its consequences stay. All of these are the same finding:
+
+- a limit that a key would lift — *history stored 300 saves, listed ten, and refused the
+  rest with "requires an activated licence key"*;
+- code for a paid feature shipped "just in case the user upgrades", even if unreachable;
+- a **greyed / disabled menu item or button named after a paid feature** — it reads as that
+  feature switched off;
+- strings that promise what this edition does not do ("AI editing", "one-click updates");
+- comments describing a paid tier, a subscription or a licence in the shipped files.
+
+```sh
+grep -rniE --include='*.php' --include='*.js' --exclude-dir={vendor,node_modules,.git,tests,tools,docs} \
+  "licen[cs]e key|is_licensed|activation key|requires (an? )?(pro|premium|activated)|upgrade to|unlock(ed|s)? (with|by|after|in) |unlock (the )?(pro|premium|full|all|more)|pro only|premium only|\\btrial\\b|\\bquota\\b" .
+grep -rniE --include='*.php' --include='*.js' "disabled|aria-disabled|is-locked|locked|greyed|badge" . | grep -iE "pro|premium|upgrade"
+```
+
+A bare `unlock` is deliberately NOT in the pattern: the block editor's own content-only
+*design lock* (`unlock`, `unlocked`) fills any Gutenberg plugin with false hits.
+
+Every hit is either deleted or is the ONE plain upsell (§20). The fix is to **remove the
+gate, not rename it**: pick the edition's real limit (ten saves), store only that, list and
+restore everything stored. Then add a build gate so the next port from Pro cannot bring it
+back.
+
+## 20. Upsell scope — one place, no dashboard takeover (Guideline 11)
+
+> **No check covers this.**
+
+The pre-review names it next to trialware: "Upgrade prompts, notices, alerts … must be
+limited in scope and used with moderation." What passes: **one plain menu item, last in the
+plugin's own menu, opening one screen of text with one link**, saying the paid plugin is
+separate and that everything here works without it. What gets flagged: several rows of a
+menu being advertising, badges and coloured pills, an off-site URL used as a menu slug, a
+script added to every admin page to open it, notices outside the plugin's own screens.
+
+```sh
+grep -rnE --include='*.php' "add_(sub)?menu_page|admin_notices|all_admin_notices|admin_enqueue_scripts" . | grep -v "/tests/"
+```
+
+Count the menu rows that sell something, and check that nothing is hooked on every admin
+screen for the sake of the upsell.
+
+## 21. REST routes — `permission_callback`, and what a public route can reach
+
+> Partially covered: Plugin Check flags a **missing** `permission_callback`. It cannot judge
+> a `__return_true`. The pre-review lists **every** route using one.
+
+```sh
+grep -rn --include='*.php' -B6 "__return_true" . | grep -E "register_rest_route|permission_callback|//"
+```
+
+- Put the justification **directly above the `permission_callback` line**, not above
+  `register_rest_route()`: the scan quotes the array, and a comment that sits outside it is
+  not in the excerpt the reviewer reads (three of four routes were quoted with their
+  comment; the fourth, commented one block higher, was quoted bare).
+- Say *why* it is public and *what* protects it instead (signed token, nonce, honeypot,
+  rate limit).
+- Then audit each public route as an attacker: what can the caller make it read or write?
+  The audit that followed this review found real bugs — a listing route that read its
+  template from **any** page a key could name, published or not; a form field named after
+  an internal meta key; an opt-in link that never expired; an export that asked for a
+  weaker capability than the screen showing the same data.
+- Authenticated routes: a named capability callback is fine; the scan only reports them.
+
+## 22. Whose brand is it — a Lite edition of your own Pro (ownership)
+
+> **No check covers this, and `name-check.sh` passes it.** See `naming-and-trademarks.md`
+> → "Your own product looks like someone else's trademark".
+
+The pre-review's AI compares the name with what it finds on the web. "X Lite" next to a
+public "X Pro" reads as *a third party using X's name* unless the submission itself proves
+they are the same owner. It looks at: the **domain of the account email**, `Plugin URI`,
+`Author URI`, the contributor names, the readme URLs. If the account email is on another
+product's domain and the headers point at GitHub, nothing ties the account to the brand.
+
+Before uploading a Lite/Free edition:
+
+1. Put the TXT record **`wordpressorg-<username>-verification`** at the root of the domain
+   where the paid product is sold (`dig +short TXT example.com`). It is quoted in the
+   review email, and it can be placed before any review asks for it.
+2. Better still, make the wordpress.org account email one on that domain (a real mailbox).
+3. Point `Plugin URI` / `Author URI` at that domain rather than at a code host.
+4. Say it in the first message: "X Pro is my own product, sold at example.com; ownership
+   TXT record is in place." One sentence — see `templates/review-reply.md`.
+
+All plugins of one entity belong under **one** wordpress.org account; never resubmit from a
+second account — ask for a transfer instead.
 
 ---
 

@@ -25,7 +25,7 @@ with zero installs.
 
 | Gate | Question | Hard condition |
 |---|---|---|
-| **0 Name & slug** | Will the name be rejected? | No banned/discouraged term; trademarks only behind `for`/`with` at the end; slug clears `Trademarks_Check`; no confusable collision |
+| **0 Name & slug** | Will the name be rejected? | No banned/discouraged term; trademarks only behind `for`/`with` at the end; slug clears `Trademarks_Check`; no confusable collision; **if the name shares a brand with a product sold elsewhere (a Lite of your own Pro), ownership of that brand is provable before upload** |
 | **1 Plugin Check** | Will the upload form accept it? | **Zero errors.** Every remaining warning fixed *or* written down with a justification |
 | **2 Human rules** | Will the reviewer reject it? | Every row in `reviewer-findings.md` satisfied or justified |
 | **3 Payload** | Is the ZIP what should ship? | No `file_type`/`plugin_content` findings; no dev artefacts |
@@ -71,6 +71,20 @@ trademark-looking coined word is actually the author's.
 On failure, output the shape of the real rejection email — the problem, then a compliant
 suggested display name **and slug**.
 
+**A pass from the script is not a pass of the gate.** The automated pre-review compares the
+name with what it finds on the web: "X Lite" beside a public "X Pro" is reported as *another
+entity's* product unless the submission proves one owner. `Lite` itself is fine (the
+directory is full of `*-lite` slugs); what fails is an account email on an unrelated domain
+and header URIs that point at a code host. Check, before the first upload:
+
+```sh
+dig +short TXT <domain-where-the-paid-edition-is-sold> | grep wordpressorg-   # wordpressorg-<username>-verification
+grep -nE "^ \* (Plugin URI|Author URI):" <main-file>.php                       # the brand's domain, not GitHub
+```
+
+See `references/naming-and-trademarks.md` → "Your own product looks like someone else's
+trademark" and `references/reviewer-findings.md` §22.
+
 ## Gate 1 — Plugin Check, the way wordpress.org runs it
 
 ```sh
@@ -110,8 +124,13 @@ the reviewer's own AI accepts as a genuine false positive, per check family).
 
 ## Gate 2 — What the reviewer catches and no sniff does
 
-Work through **`references/reviewer-findings.md`** — 18 findings, each with a detection
+Work through **`references/reviewer-findings.md`** — 22 findings, each with a detection
 command and the code that *partially* covers it, so you can see where the tool stops.
+
+Four of them (§19–§22) come from one real pre-review that pended a plugin which had passed
+Plugin Check with zero errors: **trialware left behind by a Lite derived from Pro**, **upsell
+scope**, **public REST routes**, and **ownership of the brand**. Run those sweeps on every
+Lite/Free edition — they are where a clean tool run and a pended submission part ways.
 
 Start here, because these are re-flagged regardless of what your tooling said:
 
@@ -149,9 +168,17 @@ Final agreement check per **`references/readme-and-headers.md`**: `=== Name ===`
 - The wordpress.org account email is the plugin's ownership proof. Free-email providers are
   refused for ownership; it must be a real mailbox, not a forwarder or routing rule. **A
   bounce on it can get a published plugin closed.**
-- **Resubmitting after a review email?** Use `templates/review-reply.md`: each quoted
-  finding → code → what changed → where, and an explicit desired-slug line. Renaming the
-  display name alone does not change the slug.
+- **Resubmitting after a review email?** Use `templates/review-reply.md`. The reply is
+  **short**: the team asks authors *not* to list changes ("we will review the entire plugin
+  again"), only to give context a re-scan cannot see — ownership proof, routes that are
+  public by design, and an explicit desired-slug line. The per-finding worksheet in that
+  template is for you, not for the email. Address **every** section before replying: partial
+  progress between rounds can get a submission rejected for good. Renaming the display name
+  alone does not change the slug.
+- **Reading an automated pre-review** (`Review ID: AUTOPREREVIEW ❗TRM-OWN-LIC …`): most of
+  the email is the standard checklist. The real findings are the sections with quoted
+  `file:line` cases and ✨ AI remarks, and the flags in the Review ID name them (inferred:
+  `TRM` name/trademark, `OWN` ownership, `LIC` licence gate/trialware).
 - **Already published?** Check SVN `trunk`/`tags`/`assets` for unexpected files, and
   confirm `Stable tag` names a tag that actually exists — if it does not, the directory
   silently serves trunk.

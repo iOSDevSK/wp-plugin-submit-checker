@@ -185,3 +185,35 @@ An exact phrase **in the title** wins that phrase almost regardless of install c
 3. **Short description** — indexed, and it is the line a person actually reads. ≤150 chars.
 4. **`Tested up to` at the current major** — an outdated value hides the plugin from search.
 5. **`icon-128x128.png`** shows in the results list, so it decides the click.
+
+---
+
+## Your own product looks like someone else's trademark
+
+*From a real pre-review, September 2026 (Review ID flags `TRM-OWN-LIC`).*
+
+> ✨ "Visual Edit Lite" is not sufficiently distinctive and is highly similar to the related
+> "Visual Edit Pro" product for the same functionality, which is publicly operated by
+> another entity.
+
+"Another entity" was the author. The name cleared every list in `name-check.sh`; the AI
+flagged it because nothing in the submission connected the wordpress.org account to the
+site selling the Pro edition — the account email sat on a different product's domain and
+both URIs in the header pointed at GitHub.
+
+This is an **ownership** finding wearing a trademark's clothes, and it has two exits:
+
+- **Prove the brand is yours** (keeps the name and the slug): TXT record
+  `wordpressorg-<username>-verification` on the product's domain, or an account email on
+  that domain, plus one sentence in the reply. See `reviewer-findings.md` §22.
+- **Rename** to `<coined term first> <what it does>` and ask for the new slug explicitly.
+  Only needed if the brand is *not* demonstrably yours, or if a human reviewer still finds
+  the name too generic — two common words ("Visual Edit") are distinctive only by
+  ownership, so expect the question and have the proof ready.
+
+Do this **before the first upload**. After approval the slug cannot change.
+
+How to read the Review ID of an automated pre-review (inferred from the sections of the
+email it headed, not documented anywhere): `AUTOPREREVIEW ❗TRM-OWN-LIC` — `TRM` name /
+trademark, `OWN` ownership, `LIC` licence gate / trialware. The flags say which sections
+carry a real finding; the rest of the email is the standard checklist.
